@@ -1,0 +1,60 @@
+name: Validate Latest GTFS
+
+on:
+  workflow_dispatch:
+
+  schedule:
+    - cron: "0 5 * * *"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Download latest GTFS
+        run: |
+          python scripts/download_latest_gtfs.py
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Download GTFS Validator
+        run: |
+          curl -L \
+            https://github.com/MobilityData/gtfs-validator/releases/latest/download/gtfs-validator.jar \
+            -o gtfs-validator.jar
+
+      - name: Run Validator
+        run: |
+          mkdir -p validation-report
+
+          java -Xmx4G -jar gtfs-validator.jar \
+            -i latest_gtfs.zip \
+            -o validation-report
+
+      - name: Upload Validation Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: gtfs-validation-report
+          path: validation-report/
+
+      - name: Upload GTFS File
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-gtfs
+          path: latest_gtfs.zip

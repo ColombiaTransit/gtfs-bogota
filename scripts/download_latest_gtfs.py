@@ -33,8 +33,9 @@ def sort_stop_times(gtfs_zip):
 
         df = pd.read_csv(
             stop_times,
+            low_memory=False,
             dtype=str,
-            keep_default_na=False
+            keep_default_na=False,
         )
 
         df["stop_sequence"] = pd.to_numeric(
@@ -132,6 +133,10 @@ def main():
 
     size_mb = Path(OUTPUT_FILE).stat().st_size / 1024 / 1024
     print(f"Saved {OUTPUT_FILE} ({size_mb:.2f} MB)")
+
+    print("Optimizing GTFS feed...")
+    sort_stop_times(OUTPUT_FILE)
+    print("Optimization complete")
 
     with open("latest_gtfs_key.txt", "w") as fh:
         fh.write(latest["key"])

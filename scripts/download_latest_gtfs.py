@@ -12,7 +12,6 @@ import math
 
 from pathlib import Path
 from datetime import datetime
-from pathlib import Path
 
 BASE_URL = "https://storage.googleapis.com/gtfs-estaticos/"
 OUTPUT_FILE = "latest_gtfs.zip"

@@ -5,6 +5,8 @@ on:
 
   schedule:
     - cron: "0 5 * * *"
+env:
+  GTFS_VALIDATOR_VERSION: latest       # or pin e.g. "v5.0.1"
 
 jobs:
   validate:

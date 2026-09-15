@@ -4,12 +4,67 @@ import os
 import sys
 import requests
 import xml.etree.ElementTree as ET
+import pandas as pd
+import zipfile
+import tempfile
+import shutil
+
+from pathlib import Path
 from datetime import datetime
 from pathlib import Path
 
 BASE_URL = "https://storage.googleapis.com/gtfs-estaticos/"
 OUTPUT_FILE = "latest_gtfs.zip"
 
+def sort_stop_times(gtfs_zip):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+
+        with zipfile.ZipFile(gtfs_zip, "r") as zf:
+            zf.extractall(tmpdir)
+
+        stop_times = tmpdir / "stop_times.txt"
+
+        if not stop_times.exists():
+            print("stop_times.txt not found")
+            return
+
+        print("Sorting stop_times.txt...")
+
+        df = pd.read_csv(
+            stop_times,
+            dtype=str,
+            keep_default_na=False
+        )
+
+        df["stop_sequence"] = pd.to_numeric(
+            df["stop_sequence"],
+            errors="coerce"
+        )
+
+        df = df.sort_values(
+            ["trip_id", "stop_sequence"],
+            kind="stable"
+        )
+
+        df.to_csv(
+            stop_times,
+            index=False
+        )
+
+        output_zip = str(gtfs_zip).replace(".zip", "_sorted.zip")
+
+        with zipfile.ZipFile(output_zip, "w", zipfile.ZIP_DEFLATED) as zf:
+            for file in tmpdir.rglob("*"):
+                if file.is_file():
+                    zf.write(
+                        file,
+                        file.relative_to(tmpdir)
+                    )
+
+        shutil.move(output_zip, gtfs_zip)
+
+        print("stop_times.txt sorted successfully")
 
 def parse_bucket_listing(xml_content):
     root = ET.fromstring(xml_content)

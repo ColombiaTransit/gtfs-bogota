@@ -1,8 +1,7 @@
 name: Validate Latest GTFS
 
 env:
-
-GTFS_VALIDATOR_VERSION: v8.0.1
+  GTFS_VALIDATOR_VERSION: v8.0.1
 
 on:
   workflow_dispatch:

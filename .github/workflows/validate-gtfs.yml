@@ -54,16 +54,26 @@ jobs:
         run: |
           docker pull ghcr.io/ad-freiburg/pfaedle:latest
 
-      - name: Generate shapes with pfaedle
+      - name: Prepare directories
+        run: |
+          mkdir osm gtfs gtfs-out
+          mv bogota.osm.pbf osm/
+          cp latest_gtfs.zip gtfs/
+          
+      - name: Run Pfaedle
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}:/data" \
+            -v "${{ github.workspace }}/osm:/osm" \
+            -v "${{ github.workspace }}/gtfs:/gtfs" \
+            -v "${{ github.workspace }}/gtfs-out:/gtfs-out" \
             ghcr.io/ad-freiburg/pfaedle:latest \
-            pfaedle \
-            -x /data/bogota.osm.pbf \
-            -i /data/latest_gtfs.zip \
-            -o /data/gtfs_work_fixed
+            -x /osm/bogota.osm.pbf \
+            -i /gtfs/latest_gtfs.zip
 
+      - name: Inspect output
+        run: |
+          ls -lah gtfs-out
+      
       - name: Repack GTFS
         run: |
           cd gtfs_work_fixed

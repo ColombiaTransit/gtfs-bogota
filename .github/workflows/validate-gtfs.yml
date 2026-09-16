@@ -74,6 +74,26 @@ jobs:
       - name: Inspect output
         run: |
           ls -lah gtfs-out
+
+      - name: Remove shape_dist_traveled from stop_times.txt
+        run: |
+          python3 - <<'PY'
+          import pandas as pd
+      
+          file = "gtfs-out/stop_times.txt"
+      
+          df = pd.read_csv(file)
+      
+          if "shape_dist_traveled" in df.columns:
+              df.drop(columns=["shape_dist_traveled"], inplace=True)
+              print("Removed shape_dist_traveled column")
+      
+          df.to_csv(file, index=False)
+          PY
+          `
+      - name: Inspect output
+        run: |
+          ls -lah gtfs-out
       
       - name: Repack GTFS
         run: |

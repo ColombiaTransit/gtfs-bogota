@@ -1,0 +1,40 @@
+name: Build Bogota OSM Extract
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-bogota-extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Osmium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y osmium-tool
+
+      - name: Download Colombia OSM
+        run: |
+          wget \
+            -O colombia.osm.pbf \
+            https://download.geofabrik.de/south-america/colombia-latest.osm.pbf
+
+      - name: Extract Bogota
+        run: |
+          mkdir -p osm
+
+          osmium extract \
+            --bbox=-74.30,4.45,-73.95,4.90 \
+            colombia.osm.pbf \
+            -o osm/bogota.osm.pbf \
+            --overwrite
+
+      - name: Check extract
+        run: |
+          ls -lh osm/bogota.osm.pbf

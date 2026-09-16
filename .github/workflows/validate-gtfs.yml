@@ -29,6 +29,34 @@ jobs:
         run: |
           python scripts/download_latest_gtfs.py
 
+      - name: Extract GTFS
+        run: |
+          mkdir gtfs_work
+          unzip -q latest_gtfs.zip -d gtfs_work
+
+      - name: Download Bogota OSM extract
+        run: |
+          curl -L \
+            -o bogota.osm.pbf \
+            https://github.com/${{ github.repository }}/releases/download/osm-latest/bogota.osm.pbf
+      
+          ls -lh bogota.osm.pbf
+
+      - name: Run Pfaedle
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/data" \
+            pfaedle \
+            pfaedle \
+            -x /data/bogota.osm.pbf \
+            -i /data/gtfs_work \
+            -o /data/gtfs_work_fixed
+
+      - name: Repack GTFS
+        run: |
+          cd gtfs_work_fixed
+          zip -qr ../latest_gtfs_pfaedle.zip .      
+      
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -54,7 +82,7 @@ jobs:
           mkdir -p validation-report
 
           java -Xmx4G -jar gtfs-validator-cli.jar \
-            -i latest_gtfs.zip \
+            -i latest_gtfs_pfaedle.zip \
             -o validation-report
 
       - name: Upload Validation Report

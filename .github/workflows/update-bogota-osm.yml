@@ -1,7 +1,10 @@
-name: Build Bogota OSM Extract
+name: Update Bogota OSM Extract
 
 on:
   workflow_dispatch:
+
+  schedule:
+    - cron: "0 3 * * 0"   # weekly
 
 permissions:
   contents: write
@@ -25,16 +28,17 @@ jobs:
             -O colombia.osm.pbf \
             https://download.geofabrik.de/south-america/colombia-latest.osm.pbf
 
-      - name: Extract Bogota
+      - name: Extract Bogotá
         run: |
-          mkdir -p osm
-
           osmium extract \
-            --bbox=-74.30,4.45,-73.95,4.90 \
+            --bbox=-74.2183,4.45,-74.0108,4.90 \
             colombia.osm.pbf \
-            -o osm/bogota.osm.pbf \
+            -o bogota.osm.pbf \
             --overwrite
 
-      - name: Check extract
-        run: |
-          ls -lh osm/bogota.osm.pbf
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: osm-latest
+          name: Bogotá OSM Extract
+          files: bogota.osm.pbf

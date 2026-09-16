@@ -61,7 +61,7 @@ jobs:
             ghcr.io/ad-freiburg/pfaedle:latest \
             pfaedle \
             -x /data/bogota.osm.pbf \
-            -i /data/gtfs_work \
+            -i /data/latest_gtfs.zip \
             -o /data/gtfs_work_fixed
 
       - name: Repack GTFS

@@ -95,6 +95,10 @@ jobs:
       
           df.to_csv(file, index=False)
           PY
+
+      - name: Deduplicate shape points
+        run: |
+          python scripts/deduplicate_shapes.py
           
       - name: Inspect output
         run: |

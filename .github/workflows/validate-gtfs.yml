@@ -42,11 +42,23 @@ jobs:
       
           ls -lh bogota.osm.pbf
 
-      - name: Run Pfaedle
+          file bogota.osm.pbf
+
+      - name: Verify inputs
+        run: |
+          ls -lah
+          ls -lah gtfs_work
+          ls -lh bogota.osm.pbf
+
+      - name: Pull pfaedle
+        run: |
+          docker pull ghcr.io/ad-freiburg/pfaedle:latest
+
+      - name: Generate shapes with pfaedle
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/data" \
-            pfaedle \
+            ghcr.io/ad-freiburg/pfaedle:latest \
             pfaedle \
             -x /data/bogota.osm.pbf \
             -i /data/gtfs_work \

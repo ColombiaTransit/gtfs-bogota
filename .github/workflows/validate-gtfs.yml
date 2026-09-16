@@ -43,13 +43,7 @@ jobs:
           ls -lh bogota.osm.pbf
 
           file bogota.osm.pbf
-
-      - name: Verify inputs
-        run: |
-          ls -lah
-          ls -lah gtfs_work
-          ls -lh bogota.osm.pbf
-
+      
       - name: Pull pfaedle
         run: |
           docker pull ghcr.io/ad-freiburg/pfaedle:latest
@@ -71,10 +65,6 @@ jobs:
             -D \
             -x /osm/bogota.osm.pbf \
             /gtfs/latest_gtfs.zip
-
-      - name: Inspect output
-        run: |
-          ls -lah gtfs-out
 
       - name: Remove shape_dist_traveled from stop_times.txt
         run: |
@@ -100,10 +90,6 @@ jobs:
         run: |
           python scripts/deduplicate_shapes.py
           
-      - name: Inspect output
-        run: |
-          ls -lah gtfs-out
-      
       - name: Repack GTFS
         run: |
           cd gtfs-out
@@ -137,14 +123,48 @@ jobs:
             -i latest_gtfs_pfaedle.zip \
             -o validation-report
 
-      - name: Upload Validation Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: gtfs-validation-report
-          path: validation-report/
+      - name: Generate tags
+        run: |
+          VERSION_TAG=$(cat latest_gtfs_key.txt | sed 's/.zip$//')
+      
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
+          echo "LATEST_TAG=latest" >> $GITHUB_ENV
 
-      - name: Upload GTFS File
-        uses: actions/upload-artifact@v4
-        with:
-          name: latest-gtfs
-          path: latest_gtfs.zip
+      - name: Create versioned release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$VERSION_TAG" >/dev/null 2>&1 || \
+          gh release create "$VERSION_TAG" \
+            --title "$VERSION_TAG" \
+            --notes "Automated GTFS build and validation"
+
+      - name: Refresh latest release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest -y --cleanup-tag || true
+      
+          gh release create latest \
+            --title "Latest GTFS" \
+            --notes "Latest generated GTFS feed"
+
+      - name: Upload versioned assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "$VERSION_TAG" \
+            latest_gtfs_pfaedle.zip \
+            validation-report/report.html \
+            validation-report/report.json \
+            --clobber
+
+      - name: Upload latest assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload latest \
+            latest_gtfs_pfaedle.zip \
+            validation-report/report.html \
+            validation-report/report.json \
+            --clobber

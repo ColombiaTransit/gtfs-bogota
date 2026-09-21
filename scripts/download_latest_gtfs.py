@@ -16,6 +16,89 @@ from datetime import datetime
 BASE_URL = "https://storage.googleapis.com/gtfs-estaticos/"
 OUTPUT_FILE = "latest_gtfs.zip"
 
+def deduplicate_routes(gtfs_zip):
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+
+        with zipfile.ZipFile(gtfs_zip, "r") as zf:
+            zf.extractall(tmpdir)
+
+        routes_file = tmpdir / "routes.txt"
+
+        if not routes_file.exists():
+            print("routes.txt not found")
+            return
+
+        print("Checking routes.txt for duplicate route_id values...")
+
+        df = pd.read_csv(
+            routes_file,
+            low_memory=False,
+            dtype=str,
+            keep_default_na=False,
+        )
+
+        if "route_id" not in df.columns:
+            print("ERROR: routes.txt has no route_id column")
+            raise ValueError("routes.txt has no route_id column")
+
+        # Find all rows whose route_id occurs more than once.
+        duplicates = df[df.duplicated(subset=["route_id"], keep=False)]
+
+        if duplicates.empty:
+            print(f"routes.txt OK: {len(df)} unique routes")
+            return
+
+        duplicate_ids = duplicates["route_id"].unique()
+
+        print(
+            f"Found {len(duplicate_ids)} duplicate route_id value(s) "
+            f"across {len(duplicates)} rows:"
+        )
+
+        for route_id in duplicate_ids:
+            count = (df["route_id"] == route_id).sum()
+            print(f"  route_id={route_id}: {count} occurrences")
+
+        original_count = len(df)
+
+        # GTFS requires route_id to be unique.
+        # Keep the first occurrence and remove subsequent duplicates.
+        df = df.drop_duplicates(
+            subset=["route_id"],
+            keep="first",
+        )
+
+        removed_count = original_count - len(df)
+
+        df.to_csv(
+            routes_file,
+            index=False,
+        )
+
+        # Rebuild GTFS ZIP.
+        output_zip = str(gtfs_zip).replace(".zip", "_routes_cleaned.zip")
+
+        with zipfile.ZipFile(
+            output_zip,
+            "w",
+            zipfile.ZIP_DEFLATED,
+        ) as zf:
+            for file in tmpdir.rglob("*"):
+                if file.is_file():
+                    zf.write(
+                        file,
+                        file.relative_to(tmpdir),
+                    )
+
+        shutil.move(output_zip, gtfs_zip)
+
+        print(
+            f"routes.txt cleaned successfully: "
+            f"{removed_count} duplicate row(s) removed, "
+            f"{len(df)} unique routes remain"
+        )
+
 def sort_stop_times(gtfs_zip):
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
@@ -135,6 +218,7 @@ def main():
     print(f"Saved {OUTPUT_FILE} ({size_mb:.2f} MB)")
 
     print("Optimizing GTFS feed...")
+    deduplicate_routes(OUTPUT_FILE)
     sort_stop_times(OUTPUT_FILE)
     print("Optimization complete")
 

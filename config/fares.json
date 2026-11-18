@@ -1,0 +1,28 @@
+{
+  "_comment": "Bogotá SITP / TransMilenio fares. Source: https://bogota.gov.co/mi-ciudad/movilidad/tarifa-transmilenio-transmicable-y-transmizonal-2026-bogota (valid from 2026-01-14). Edit this file when tariffs change; scripts/add_fares.py regenerates all fare files from it.",
+
+  "currency": "COP",
+  "fare_price": 3550,
+
+  "transfer": {
+    "_comment": "Free transfers between troncal, zonal and TransMiCable within the window, only with a personalised TuLlave card. Concejo approved extending the window to 150 min (Aug 2026), not yet in force.",
+    "duration_minutes": 125,
+    "max_transfers": 2,
+    "price": 0
+  },
+
+  "networks": {
+    "_comment": "agency_id values from agency.txt in the official feed. Feeders (alimentadores) are free.",
+    "troncal":     {"name": "TransMilenio Troncal",      "agency_ids": ["1", "6"], "paid": true},
+    "zonal":       {"name": "TransMiZonal (SITP)",       "agency_ids": ["3", "4", "5"], "paid": true},
+    "cable":       {"name": "TransMiCable",              "agency_ids": ["7"], "paid": true},
+    "alimentador": {"name": "TransMilenio Alimentadores", "agency_ids": ["2"], "paid": false}
+  },
+
+  "fare_media": {
+    "_comment": "fare_media_type: 2 = physical transit card, 3 = cEMV contactless bank card. transfers=true means the free-transfer rule applies.",
+    "tullave_personalizada": {"name": "TuLlave personalizada", "type": 2, "transfers": true},
+    "tullave_basica":        {"name": "TuLlave básica",        "type": 2, "transfers": false},
+    "tarjeta_bancaria":      {"name": "Tarjeta débito/crédito (Tap&Go)", "type": 3, "transfers": false}
+  }
+}
